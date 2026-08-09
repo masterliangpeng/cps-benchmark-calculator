@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CPS Benchmark Calculator</title>
+  <style>
+    :root{font-family:system-ui,sans-serif;color:#172033;background:#f5f7fb}body{margin:0;padding:2rem}.card{max-width:720px;margin:auto;background:#fff;border:1px solid #dce2ec;border-radius:16px;padding:1.5rem;box-shadow:0 10px 30px #17203312}h1{margin-top:0}form{display:grid;grid-template-columns:1fr 1fr auto;gap:.75rem;align-items:end}label{display:grid;gap:.35rem;font-weight:600}input,button{font:inherit;padding:.7rem;border-radius:8px;border:1px solid #aab4c3}button{background:#3157d5;color:#fff;border:0;font-weight:700;cursor:pointer}table{width:100%;border-collapse:collapse;margin-top:1rem}th,td{text-align:left;border-bottom:1px solid #e5e9f0;padding:.65rem}.summary{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}.metric{background:#eef2ff;border-radius:10px;padding:.75rem 1rem}.metric strong{display:block;font-size:1.4rem}small{color:#526078}@media(max-width:600px){form{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>CPS Benchmark Calculator</h1>
+    <p>Record several click-speed trials and compare repeatable performance with peak speed.</p>
+    <form id="trial-form">
+      <label>Clicks<input id="clicks" type="number" min="0" step="1" required></label>
+      <label>Seconds<input id="seconds" type="number" min="0.1" step="0.1" value="5" required></label>
+      <button type="submit">Add trial</button>
+    </form>
+    <div class="summary" aria-live="polite">
+      <div class="metric"><small>Trials</small><strong id="count">0</strong></div>
+      <div class="metric"><small>Median CPS</small><strong id="median">—</strong></div>
+      <div class="metric"><small>Best CPS</small><strong id="best">—</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>Trial</th><th>Clicks</th><th>Seconds</th><th>CPS</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p><small>Formula: CPS = clicks ÷ seconds. Keep test conditions and duration consistent when comparing results.</small></p>
+  </main>
+  <script>
+    const trials=[];
+    const cps=(clicks,seconds)=>clicks/seconds;
+    const median=values=>{const sorted=[...values].sort((a,b)=>a-b);const mid=Math.floor(sorted.length/2);return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2};
+    const fmt=value=>Number(value).toFixed(2);
+    function render(){
+      const scores=trials.map(t=>cps(t.clicks,t.seconds));
+      document.querySelector('#rows').innerHTML=trials.map((t,i)=>`<tr><td>${i+1}</td><td>${t.clicks}</td><td>${t.seconds}</td><td>${fmt(scores[i])}</td></tr>`).join('');
+      document.querySelector('#count').textContent=trials.length;
+      document.querySelector('#median').textContent=scores.length?fmt(median(scores)):'—';
+      document.querySelector('#best').textContent=scores.length?fmt(Math.max(...scores)):'—';
+    }
+    document.querySelector('#trial-form').addEventListener('submit',event=>{
+      event.preventDefault();
+      const clicks=Number(document.querySelector('#clicks').value);
+      const seconds=Number(document.querySelector('#seconds').value);
+      if(!Number.isFinite(clicks)||!Number.isFinite(seconds)||clicks<0||seconds<=0)return;
+      trials.push({clicks,seconds});render();event.target.reset();document.querySelector('#seconds').value=5;
+    });
+  </script>
+</body>
+</html>
