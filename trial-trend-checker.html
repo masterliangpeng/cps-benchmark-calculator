@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Trial Trend Checker</title>
+<meta name="description" content="Review the order of repeated CPS trials and estimate whether scores stayed stable, rose, or declined during one session.">
+<style>
+:root{color-scheme:dark;--bg:#09111e;--card:#121f34;--line:#2b405e;--text:#eef4ff;--muted:#a8b7ca;--accent:#75e3b3;--warn:#ffc875}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#152c42,#09111e 58%);color:var(--text);font:16px/1.55 system-ui,sans-serif}.wrap{max-width:880px;margin:auto;padding:46px 20px}h1{font-size:clamp(2.1rem,6vw,3.7rem);line-height:1.04;margin:0 0 14px}.lead,.note{color:var(--muted)}.card{margin-top:24px;padding:22px;border:1px solid var(--line);border-radius:18px;background:rgba(18,31,52,.96)}label{display:block;font-weight:800;margin-bottom:8px}textarea{width:100%;min-height:100px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0a1424;color:var(--text);font:inherit}button{border:0;border-radius:10px;padding:11px 18px;background:var(--accent);color:#07130f;font-weight:850;cursor:pointer;margin-top:13px}.error{min-height:24px;color:#ff9e9e;margin-top:8px}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}.metric{padding:14px;border:1px solid var(--line);border-radius:12px;background:#0a1424}.metric span{display:block;color:var(--muted);font-size:.84rem}.metric strong{font-size:1.3rem}.chart{height:220px;display:flex;align-items:end;gap:8px;padding:18px 8px 0;border-bottom:1px solid var(--line)}.barwrap{height:100%;flex:1;display:flex;align-items:end;position:relative}.bar{width:100%;min-height:3px;background:linear-gradient(var(--accent),#3f9ddd);border-radius:7px 7px 0 0}.barwrap small{position:absolute;bottom:-23px;left:50%;transform:translateX(-50%);color:var(--muted)}.chartspace{padding-bottom:28px}.callout{padding:13px 15px;border-left:4px solid var(--warn);background:#0a1424;border-radius:6px}.note{font-size:.92rem}a{color:var(--accent)}footer{margin-top:28px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>CPS Trial Trend Checker</h1>
+<p class="lead">Keep repeated scores in their original order to see whether performance changed during one session. The trend is descriptive: it can suggest fatigue or continued warm-up, but it cannot identify a cause by itself.</p>
+<section class="card">
+<label for="scores">Ordered CPS scores</label>
+<textarea id="scores" placeholder="Example: 9.2, 9.1, 8.9, 8.7, 8.5">9.2, 9.1, 8.9, 8.7, 8.5</textarea>
+<p class="note">Enter 3–20 trials measured with the same duration, device, settings, and rest interval.</p>
+<button id="analyze" type="button">Analyze order</button>
+<div id="error" class="error" role="alert"></div>
+<div class="summary" aria-live="polite">
+<div class="metric"><span>Trials</span><strong id="count">—</strong></div>
+<div class="metric"><span>First score</span><strong id="first">—</strong></div>
+<div class="metric"><span>Last score</span><strong id="last">—</strong></div>
+<div class="metric"><span>Linear slope</span><strong id="slope">—</strong></div>
+<div class="metric"><span>Session pattern</span><strong id="pattern">—</strong></div>
+</div>
+<div class="chartspace"><div id="chart" class="chart" aria-label="Bar chart of ordered CPS trials"></div></div>
+<p id="interpretation" class="callout">Enter scores to review the session order.</p>
+<p class="note">A slope near zero means the fitted line changed little per trial. This does not prove consistency, fatigue, improvement, or a training effect. Review the individual scores and repeat the same protocol on another day before drawing a conclusion.</p>
+</section>
+<footer>Collect comparable timed trials at <a href="https://cpstest.me">CpsTest</a>. Stop if clicking causes pain, tingling, or numbness.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function parseScores(raw){const values=raw.trim().split(/[\s,;]+/).filter(Boolean).map(Number);if(values.length<3||values.length>20)throw new Error('Enter between 3 and 20 trial scores.');if(values.some(v=>!Number.isFinite(v)||v<0||v>100))throw new Error('Use numeric CPS values between 0 and 100.');return values}
+function linearSlope(values){const n=values.length,meanX=(n-1)/2,meanY=values.reduce((a,b)=>a+b,0)/n;let top=0,bottom=0;values.forEach((y,x)=>{top+=(x-meanX)*(y-meanY);bottom+=(x-meanX)**2});return bottom?top/bottom:0}
+function classify(slope){if(slope>0.05)return'Rising';if(slope<-0.05)return'Declining';return'Nearly flat'}
+function explanation(pattern){if(pattern==='Rising')return'Scores rose across this session. Continued warm-up is one possible explanation, but repeat the same protocol before attributing a cause.';if(pattern==='Declining')return'Scores declined across this session. Fatigue or insufficient rest may be relevant, but the trend alone does not prove either cause.';return'The fitted trend changed little across this session. Review the score spread as well; a flat slope can still contain substantial variation.'}
+function renderChart(values){const chart=$('chart'),max=Math.max(...values,1);chart.replaceChildren(...values.map((v,i)=>{const wrap=document.createElement('div');wrap.className='barwrap';const bar=document.createElement('div');bar.className='bar';bar.style.height=(v/max*100)+'%';bar.title=`Trial ${i+1}: ${v.toFixed(2)} CPS`;const label=document.createElement('small');label.textContent=i+1;wrap.append(bar,label);return wrap}))}
+function render(){try{const values=parseScores($('scores').value),trend=linearSlope(values),pattern=classify(trend);$('error').textContent='';$('count').textContent=values.length;$('first').textContent=values[0].toFixed(2);$('last').textContent=values.at(-1).toFixed(2);$('slope').textContent=(trend>=0?'+':'')+trend.toFixed(3)+' CPS/trial';$('pattern').textContent=pattern;$('interpretation').textContent=explanation(pattern);renderChart(values)}catch(e){$('error').textContent=e.message}}
+$('analyze').addEventListener('click',render);render();
+</script>
+</body>
+</html>
