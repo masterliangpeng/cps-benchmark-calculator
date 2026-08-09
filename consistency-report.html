@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Consistency Report</title>
+<meta name="description" content="Calculate the median, mean, range and coefficient of variation for a set of click-speed trials.">
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#151d33;--text:#e8edf7;--muted:#aab5ca;--accent:#65d6ad;--line:#2a3858}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#111a2d);color:var(--text);font:16px/1.55 system-ui,sans-serif;min-height:100vh}.wrap{max-width:820px;margin:auto;padding:48px 20px}h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:0 0 12px}.lead{color:var(--muted);max-width:660px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:24px}label{display:block;font-weight:700;margin-bottom:8px}textarea{width:100%;min-height:110px;background:#0d1426;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;resize:vertical}button{margin-top:14px;background:var(--accent);color:#07120f;border:0;border-radius:10px;padding:11px 18px;font-weight:800;cursor:pointer}.error{color:#ff9b9b;min-height:24px;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:20px}.metric{background:#0d1426;border:1px solid var(--line);border-radius:12px;padding:14px}.metric span{display:block;color:var(--muted);font-size:.85rem}.metric strong{font-size:1.35rem}.note{color:var(--muted);font-size:.92rem;margin-top:18px}a{color:var(--accent)}footer{margin-top:28px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>CPS Consistency Report</h1>
+<p class="lead">Paste results from repeated trials to describe typical, peak, and session-to-session variation. This is a descriptive calculator, not a medical or competitive ranking.</p>
+<section class="card">
+<label for="scores">CPS scores</label>
+<textarea id="scores" aria-describedby="hint" placeholder="Example: 8.7, 9.1, 8.9, 9.0, 8.8">8.7, 9.1, 8.9, 9.0, 8.8</textarea>
+<div id="hint" class="note">Separate values with commas, spaces, or new lines. Use trials with the same duration and setup.</div>
+<button id="calculate" type="button">Build report</button>
+<div id="error" class="error" role="alert"></div>
+<div class="grid" id="results" aria-live="polite">
+<div class="metric"><span>Valid trials</span><strong id="count">—</strong></div>
+<div class="metric"><span>Median CPS</span><strong id="median">—</strong></div>
+<div class="metric"><span>Mean CPS</span><strong id="mean">—</strong></div>
+<div class="metric"><span>Best CPS</span><strong id="best">—</strong></div>
+<div class="metric"><span>Lowest CPS</span><strong id="lowest">—</strong></div>
+<div class="metric"><span>Range</span><strong id="range">—</strong></div>
+<div class="metric"><span>Coefficient of variation</span><strong id="cv">—</strong></div>
+</div>
+<p class="note">The median is resistant to one unusually high or low trial. Coefficient of variation is population standard deviation divided by the mean; use it only to compare sessions measured with the same protocol.</p>
+</section>
+<footer>Run comparable timed trials at <a href="https://cpstest.me">CpsTest</a>, keep their original order, and note any technical failure instead of silently deleting it.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function median(values){const s=[...values].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function summarize(values){const n=values.length,mean=values.reduce((a,b)=>a+b,0)/n;const variance=values.reduce((sum,x)=>sum+(x-mean)**2,0)/n;const low=Math.min(...values),high=Math.max(...values);return{count:n,median:median(values),mean,best:high,lowest:low,range:high-low,cv:mean?Math.sqrt(variance)/mean*100:0}}
+function parseScores(raw){const tokens=raw.trim().split(/[\s,;]+/).filter(Boolean),values=tokens.map(Number);if(values.length<2)throw new Error('Enter at least two trial scores.');if(values.some(v=>!Number.isFinite(v)||v<0||v>100))throw new Error('Use numeric CPS values between 0 and 100.');return values}
+function render(){try{const r=summarize(parseScores($('scores').value));$('error').textContent='';for(const key of ['median','mean','best','lowest','range'])$(key).textContent=r[key].toFixed(2);$('count').textContent=r.count;$('cv').textContent=r.cv.toFixed(2)+'%'}catch(e){$('error').textContent=e.message}}
+$('calculate').addEventListener('click',render);render();
+</script>
+</body>
+</html>
