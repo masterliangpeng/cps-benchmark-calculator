@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Transparent Report Exporter</title>
+<meta name="description" content="Turn ordered CPS trials and protocol details into a transparent Markdown report.">
+<style>
+:root{color-scheme:dark;--bg:#08111d;--card:#132137;--line:#2d415f;--text:#eef5ff;--muted:#a9b8cb;--accent:#84e6c2}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#08111d,#16283f);color:var(--text);font:16px/1.55 system-ui,sans-serif}.wrap{max-width:920px;margin:auto;padding:48px 20px}h1{font-size:clamp(2.1rem,6vw,3.6rem);line-height:1.04;margin:0 0 12px}.lead,.note{color:var(--muted)}.card{margin-top:24px;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}label{display:block;font-weight:800;margin-bottom:7px}input,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:#091525;color:var(--text);font:inherit}textarea{min-height:100px}.wide{grid-column:1/-1}button{margin:14px 8px 0 0;padding:11px 17px;border:0;border-radius:10px;background:var(--accent);color:#06130f;font-weight:850;cursor:pointer}.secondary{background:#203754;color:var(--text)}.error{min-height:24px;color:#ff9f9f;margin-top:8px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}.metric{padding:13px;border:1px solid var(--line);border-radius:11px;background:#091525}.metric span{display:block;color:var(--muted);font-size:.83rem}.metric strong{font-size:1.2rem}.output{white-space:pre-wrap;min-height:310px;padding:17px;border:1px solid var(--line);border-radius:11px;background:#091525;overflow:auto}.status{color:var(--accent);min-height:24px}.note{font-size:.92rem}a{color:var(--accent)}footer{margin-top:28px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>CPS Transparent Report Exporter</h1>
+<p class="lead">Convert ordered trial data and protocol details into a Markdown report that preserves the raw scores instead of showing only a personal best.</p>
+<section class="card">
+<div class="fields">
+<div><label for="duration">Trial duration (seconds)</label><input id="duration" type="number" min="1" max="60" value="5"></div>
+<div><label for="rest">Rest interval (seconds)</label><input id="rest" type="number" min="0" max="300" value="20"></div>
+<div class="wide"><label for="scores">Ordered CPS scores</label><textarea id="scores">8.5, 8.7, 8.8, 8.6, 8.9</textarea></div>
+<div class="wide"><label for="notes">Condition notes</label><textarea id="notes">Same mouse, browser, pointer settings and hand position for every trial.</textarea></div>
+</div>
+<button id="generate" type="button">Generate report</button><button id="copy" class="secondary" type="button">Copy Markdown</button>
+<div id="error" class="error" role="alert"></div><div id="status" class="status" aria-live="polite"></div>
+<div class="metrics">
+<div class="metric"><span>Trials</span><strong id="count">—</strong></div>
+<div class="metric"><span>Median</span><strong id="median">—</strong></div>
+<div class="metric"><span>Mean</span><strong id="mean">—</strong></div>
+<div class="metric"><span>Best</span><strong id="best">—</strong></div>
+<div class="metric"><span>Range</span><strong id="range">—</strong></div>
+</div>
+<pre id="report" class="output"></pre>
+<p class="note">This report does not certify that a trial was valid. Keep any invalid row and its pre-defined technical reason separately instead of silently deleting it.</p>
+</section>
+<footer>Collect comparable timed trials at <a href="https://cpstest.me">CpsTest</a>, or use the same reporting format with another timed click counter.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function integer(id,min,max,label){const value=Number($(id).value);if(!Number.isInteger(value)||value<min||value>max)throw new Error(`${label} must be a whole number from ${min} to ${max}.`);return value}
+function parseScores(raw){const values=raw.trim().split(/[\s,;]+/).filter(Boolean).map(Number);if(values.length<3||values.length>40)throw new Error('Enter between 3 and 40 ordered scores.');if(values.some(v=>!Number.isFinite(v)||v<0||v>100))throw new Error('Use numeric CPS values between 0 and 100.');return values}
+function median(values){const s=[...values].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function summary(values){const mean=values.reduce((a,b)=>a+b,0)/values.length,best=Math.max(...values);return{median:median(values),mean,best,range:best-Math.min(...values)}}
+function makeReport({duration,rest,scores,notes}){const s=summary(scores),rows=scores.map((v,i)=>`| ${i+1} | ${v.toFixed(2)} |`).join('\n');return{...s,text:`# CPS Session Report\n\n## Protocol\n\n- Trial duration: ${duration} seconds\n- Valid trials: ${scores.length}\n- Rest interval: ${rest} seconds\n- Conditions: ${notes||'Not recorded'}\n\n## Ordered results\n\n| Trial | CPS |\n|---:|---:|\n${rows}\n\n## Summary\n\n- Median: ${s.median.toFixed(2)} CPS\n- Mean: ${s.mean.toFixed(2)} CPS\n- Best: ${s.best.toFixed(2)} CPS\n- Range: ${s.range.toFixed(2)} CPS\n\n## Interpretation limits\n\nThese values describe this recorded session. They do not prove a training effect or identify a cause. Invalid trials should remain documented with a pre-defined technical reason.`}}
+function render(){try{const scores=parseScores($('scores').value),r=makeReport({duration:integer('duration',1,60,'Duration'),rest:integer('rest',0,300,'Rest'),scores,notes:$('notes').value.trim()});$('error').textContent='';$('status').textContent='';$('count').textContent=scores.length;for(const key of ['median','mean','best','range'])$(key).textContent=r[key].toFixed(2);$('report').textContent=r.text}catch(e){$('error').textContent=e.message}}
+async function copyReport(){try{await navigator.clipboard.writeText($('report').textContent);$('status').textContent='Markdown copied.'}catch{$('status').textContent='Copy was unavailable; select the report text manually.'}}
+$('generate').addEventListener('click',render);$('copy').addEventListener('click',copyReport);render();
+</script>
+</body>
+</html>
