@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Duration Comparison Tool</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#0b1020;color:#eef2ff;font:16px system-ui,sans-serif;display:grid;place-items:center}.card{width:min(820px,94vw);background:#151c33;border:1px solid #34446d;border-radius:18px;padding:28px;box-shadow:0 20px 55px #0007}h1{color:#58c4dd;margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.trial{background:#0f1730;padding:18px;border-radius:12px}label{display:grid;gap:6px;margin:10px 0}input{font:inherit;padding:10px;border:1px solid #50618a;border-radius:8px;background:#111a35;color:white}.result{margin:20px 0;padding:18px;border-left:5px solid #83c167;background:#0f1730;border-radius:8px}.score{font-size:1.8rem;color:#ffd166}.note{color:#c8d3f5}a{color:#ffd166}@media(max-width:640px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main class="card"><h1>CPS Duration Comparison</h1><p>Normalize two click trials by duration instead of comparing raw click totals.</p><div class="grid"><section class="trial"><h2>Trial A</h2><label>Clicks<input id="aClicks" type="number" min="0" value="45"></label><label>Seconds<input id="aSeconds" type="number" min="0.1" step="0.1" value="5"></label><p class="score"><span id="aScore">9.00</span> CPS</p></section><section class="trial"><h2>Trial B</h2><label>Clicks<input id="bClicks" type="number" min="0" value="82"></label><label>Seconds<input id="bSeconds" type="number" min="0.1" step="0.1" value="10"></label><p class="score"><span id="bScore">8.20</span> CPS</p></section></div><div class="result" id="result">Trial A is faster by 0.80 CPS, even though Trial B has more total clicks.</div><p class="note">Keep the mouse, browser, hand position, and test duration consistent. Run a timed test from 1 to 50 seconds at <a href="https://cpstest.me">CpsTest</a>.</p></main>
+<script>
+const ids=['aClicks','aSeconds','bClicks','bSeconds'];function update(){const ac=Number(aClicks.value),as=Number(aSeconds.value),bc=Number(bClicks.value),bs=Number(bSeconds.value);if(ac<0||bc<0||as<=0||bs<=0)return;const a=ac/as,b=bc/bs;aScore.textContent=a.toFixed(2);bScore.textContent=b.toFixed(2);const d=Math.abs(a-b).toFixed(2);result.textContent=Math.abs(a-b)<.005?'The trials have the same normalized CPS.':`${a>b?'Trial A':'Trial B'} is faster by ${d} CPS${(a>b&&ac<bc)||(b>a&&bc<ac)?', even though it has fewer total clicks.':'.'}`}ids.forEach(id=>document.getElementById(id).addEventListener('input',update));update();
+</script></body></html>
