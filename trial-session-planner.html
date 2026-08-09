@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Trial Session Planner</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#091221;color:#edf6ff;font:16px system-ui,sans-serif;display:grid;place-items:center}.card{width:min(760px,94vw);background:#12203a;border:1px solid #2e4a76;border-radius:18px;padding:28px}h1{margin-top:0;color:#67d4c4}.inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}label{display:grid;gap:7px}input{width:100%;font:inherit;padding:11px;border:1px solid #49658f;border-radius:8px;background:#0b1730;color:white}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.metric{background:#0b1730;border-radius:10px;padding:15px}.metric strong{display:block;font-size:1.65rem;color:#ffd166}.protocol{border-left:5px solid #67d4c4;padding:12px 16px;background:#0b1730;border-radius:8px}a{color:#ffd166}@media(max-width:650px){.inputs,.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main class="card"><h1>CPS Trial Session Planner</h1><p>Plan a repeatable click-speed session with measured trials and equal rest periods.</p><div class="inputs"><label>Measured trials<input id="trials" type="number" min="1" max="50" value="5"></label><label>Seconds per trial<input id="duration" type="number" min="1" max="60" value="5"></label><label>Rest between trials<input id="rest" type="number" min="0" max="300" value="20"></label></div><section class="summary"><div class="metric">Active testing<strong id="active">25 s</strong></div><div class="metric">Total rest<strong id="restTotal">80 s</strong></div><div class="metric">Session length<strong id="total">1m 45s</strong></div></section><div class="protocol" id="protocol">Warm up once, then complete 5 measured trials of 5 seconds with 20 seconds of rest between attempts. Report both median and best CPS.</div><p>Use the same setup for every measured trial. Start a timed browser test at <a href="https://cpstest.me">CpsTest</a>.</p></main>
+<script>
+function time(s){s=Math.round(s);return s<60?`${s} s`:`${Math.floor(s/60)}m ${s%60}s`}function update(){const n=Math.max(1,Number(trials.value)||1),d=Math.max(1,Number(duration.value)||1),r=Math.max(0,Number(rest.value)||0),a=n*d,rr=(n-1)*r;active.textContent=time(a);restTotal.textContent=time(rr);total.textContent=time(a+rr);protocol.textContent=`Warm up once, then complete ${n} measured trial${n===1?'':'s'} of ${d} seconds with ${r} seconds of rest between attempts. Report both median and best CPS.`}['trials','duration','rest'].forEach(id=>document.getElementById(id).addEventListener('input',update));update();
+</script></body></html>
