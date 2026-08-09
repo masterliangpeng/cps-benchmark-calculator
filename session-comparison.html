@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPS Session Comparison</title>
+<meta name="description" content="Compare two repeated CPS sessions using median, mean, best score, range and median difference.">
+<style>
+:root{color-scheme:dark;--bg:#08121f;--card:#122136;--line:#29405e;--text:#eef6ff;--muted:#a9b9cc;--accent:#7ce5c2;--blue:#76baff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#08121f,#15273c);color:var(--text);font:16px/1.55 system-ui,sans-serif;min-height:100vh}.wrap{max-width:940px;margin:auto;padding:48px 20px}h1{font-size:clamp(2.1rem,6vw,3.7rem);line-height:1.04;margin:0 0 12px}.lead,.note{color:var(--muted)}.card{margin-top:24px;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}label{display:block;font-weight:800;margin-bottom:7px}textarea{width:100%;min-height:105px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#091525;color:var(--text);font:inherit}button{margin-top:14px;border:0;border-radius:10px;padding:11px 18px;background:var(--accent);color:#06140f;font-weight:850;cursor:pointer}.error{min-height:24px;color:#ff9f9f;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:18px}.metric{padding:13px;border:1px solid var(--line);border-radius:11px;background:#091525}.metric span{display:block;color:var(--muted);font-size:.82rem}.metric strong{font-size:1.22rem}.result{margin-top:18px;padding:15px;border-left:4px solid var(--blue);background:#091525;border-radius:6px}.note{font-size:.92rem}a{color:var(--accent)}footer{margin-top:28px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>CPS Session Comparison</h1>
+<p class="lead">Compare two repeated click-speed sessions without reducing either one to a single personal best. The result is descriptive and does not prove that practice, equipment, or any one change caused the difference.</p>
+<section class="card">
+<div class="inputs">
+<div><label for="sessionA">Session A scores</label><textarea id="sessionA">8.5, 8.7, 8.8, 8.6, 8.9</textarea></div>
+<div><label for="sessionB">Session B scores</label><textarea id="sessionB">8.8, 9.0, 9.1, 8.9, 9.2</textarea></div>
+</div>
+<p class="note">Enter 3–20 scores per session. Both sessions should use the same duration, device, settings, warm-up and rest interval.</p>
+<button id="compare" type="button">Compare sessions</button>
+<div id="error" class="error" role="alert"></div>
+<div class="grid" aria-live="polite">
+<div class="metric"><span>A median</span><strong id="aMedian">—</strong></div>
+<div class="metric"><span>B median</span><strong id="bMedian">—</strong></div>
+<div class="metric"><span>A mean</span><strong id="aMean">—</strong></div>
+<div class="metric"><span>B mean</span><strong id="bMean">—</strong></div>
+<div class="metric"><span>A best</span><strong id="aBest">—</strong></div>
+<div class="metric"><span>B best</span><strong id="bBest">—</strong></div>
+<div class="metric"><span>A range</span><strong id="aRange">—</strong></div>
+<div class="metric"><span>B range</span><strong id="bRange">—</strong></div>
+</div>
+<p id="result" class="result">Enter two comparable sessions to calculate the median difference.</p>
+<p class="note">Median percent change is <code>(B median − A median) ÷ A median × 100</code>. With small samples, normal day-to-day variation can be larger than the observed difference. Repeat the same protocol before claiming improvement.</p>
+</section>
+<footer>Collect each session under the same conditions at <a href="https://cpstest.me">CpsTest</a>, and retain the original trial order for fatigue or warm-up review.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function parseScores(raw,label){const values=raw.trim().split(/[\s,;]+/).filter(Boolean).map(Number);if(values.length<3||values.length>20)throw new Error(`${label} needs between 3 and 20 scores.`);if(values.some(v=>!Number.isFinite(v)||v<0||v>100))throw new Error(`${label} must contain numeric CPS values between 0 and 100.`);return values}
+function median(values){const s=[...values].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function summary(values){const mean=values.reduce((a,b)=>a+b,0)/values.length,best=Math.max(...values),low=Math.min(...values);return{median:median(values),mean,best,range:best-low}}
+function render(){try{const a=summary(parseScores($('sessionA').value,'Session A')),b=summary(parseScores($('sessionB').value,'Session B')),difference=b.median-a.median,percent=a.median?difference/a.median*100:0;$('error').textContent='';for(const [prefix,r] of [['a',a],['b',b]])for(const key of ['Median','Mean','Best','Range'])$(prefix+key).textContent=r[key.toLowerCase()].toFixed(2);$('result').textContent=`Session B median is ${difference>=0?'+':''}${difference.toFixed(2)} CPS (${percent>=0?'+':''}${percent.toFixed(2)}%) versus Session A. This is a descriptive difference, not proof of a cause.`}catch(e){$('error').textContent=e.message}}
+$('compare').addEventListener('click',render);render();
+</script>
+</body>
+</html>
